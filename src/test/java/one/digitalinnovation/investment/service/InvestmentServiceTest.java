@@ -5,6 +5,7 @@ import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.entity.Investment;
 import one.digitalinnovation.investment.exception.InvestmentAlreadyRegisteredException;
 import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDateException;
+import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.mapper.InvestmentMapper;
 import one.digitalinnovation.investment.repository.InvestmentRepository;
 import org.hamcrest.MatcherAssert;
@@ -59,7 +60,7 @@ class InvestmentServiceTest {
     }
 
     @Test
-    void whenAlreadyRegisteredInvestmentInformedThanAnExceptionShouldBeThrown() throws InvestmentAlreadyRegisteredException {
+    void whenAlreadyRegisteredInvestmentInformedThanAnExceptionShouldBeThrown() {
         // given
         InvestmentDTO expectedInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
         Investment duplicatedInvestment = investmentMapper.toModel(expectedInvestmentDTO);
@@ -72,7 +73,7 @@ class InvestmentServiceTest {
     }
 
     @Test
-    void whenInvestmentWithInitialDateGreaterThanExpirationDateInformedThanExceptionShouldBeThrown() throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
+    void whenInvestmentWithInitialDateGreaterThanExpirationDateInformedThanExceptionShouldBeThrown() {
         // given
         InvestmentDTO expectedInvestmentDTO = InvestmentDTOBuilder.builder()
                 .initialDate(LocalDate.of(2000, 1, 1))
@@ -83,4 +84,30 @@ class InvestmentServiceTest {
         assertThrows(InvestmentInvalidExpirationDateException.class, () -> investmentService.createInvestment(expectedInvestmentDTO));
     }
 
+    @Test
+    void whenValidInvestmentNameIsGivenThenReturnAnInvestment() throws InvestmentNotFoundException {
+        // given
+        InvestmentDTO expectedFoundInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedFoundInvestment = investmentMapper.toModel(expectedFoundInvestmentDTO);
+
+        // when
+        when(investmentRepository.findByName(expectedFoundInvestment.getName())).thenReturn(Optional.of(expectedFoundInvestment));
+
+        // then
+        InvestmentDTO foundInvestmentDTO = investmentService.findByName(expectedFoundInvestmentDTO.getName());
+
+        assertThat(foundInvestmentDTO, is(equalTo(expectedFoundInvestmentDTO)));
+    }
+
+    @Test
+    void whenNoRegisteredInvestmentNameIsGivenThenThrowAnException() {
+        // given
+        InvestmentDTO expectedFoundInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+
+        // when
+        when(investmentRepository.findByName(expectedFoundInvestmentDTO.getName())).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(InvestmentNotFoundException.class, () -> investmentService.findByName(expectedFoundInvestmentDTO.getName()));
+    }
 }

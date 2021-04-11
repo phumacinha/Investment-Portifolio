@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import one.digitalinnovation.investment.builder.InvestmentDTOBuilder;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
+import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.service.InvestmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static one.digitalinnovation.investment.utils.JsonConvertionUtils.asJsonString;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -68,8 +70,8 @@ class InvestmentControllerTest {
 
         // then
         mockMvc.perform(post(INVESTMENT_API_URL_PATH)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(asJsonString(investmentDTO)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(investmentDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name", is(investmentDTO.getName())))
                 .andExpect(jsonPath("$.initialDate", is(investmentDTO.getInitialDate().toString())))
@@ -87,5 +89,37 @@ class InvestmentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(investmentDTO)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void whenGETIsCalledWithValidNameThenOkStatusIsReturned() throws Exception {
+        // given
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+
+        // when
+        when(investmentService.findByName(investmentDTO.getName())).thenReturn(investmentDTO);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + investmentDTO.getName();
+        mockMvc.perform(get(endPoint).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is(investmentDTO.getName())))
+                .andExpect(jsonPath("$.initialDate", is(investmentDTO.getInitialDate().toString())))
+                .andExpect(jsonPath("$.expirationDate", is(investmentDTO.getExpirationDate().toString())));
+
+    }
+
+    @Test
+    void whenGETIsCalledWithNoRegisteredNameThenNotFoundStatusIsReturned() throws Exception {
+        // given
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+
+        // when
+        when(investmentService.findByName(investmentDTO.getName())).thenThrow(InvestmentNotFoundException.class);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + investmentDTO.getName();
+        mockMvc.perform(get(endPoint).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 }
