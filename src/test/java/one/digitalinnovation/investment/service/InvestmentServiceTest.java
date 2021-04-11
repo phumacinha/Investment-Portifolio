@@ -158,4 +158,23 @@ class InvestmentServiceTest {
         verify(investmentRepository, times(1)).findById(expectedDeletedInvestmentDTO.getId());
         verify(investmentRepository, times(1)).deleteById(expectedDeletedInvestmentDTO.getId());
     }
+
+    @Test
+    void whenAmountToApplyIsInformedThenItShouldBeApplied() throws InvestmentNotFoundException {
+        // given
+        InvestmentDTO expectedAppliedInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedAppliedInvestment = investmentMapper.toModel(expectedAppliedInvestmentDTO);
+
+        // when
+        when(investmentRepository.findById(expectedAppliedInvestmentDTO.getId())).thenReturn(Optional.of(expectedAppliedInvestment));
+        when(investmentRepository.save(expectedAppliedInvestment)).thenReturn(expectedAppliedInvestment);
+
+        double applicationAmount = 1000;
+        double expectedValueAfterApplication = expectedAppliedInvestmentDTO.getValue() + applicationAmount;
+
+        // then
+        InvestmentDTO appliedInvestmentDTO = investmentService.apply(expectedAppliedInvestmentDTO.getId(), applicationAmount);
+
+        assertThat(appliedInvestmentDTO.getValue(), is(equalTo(expectedValueAfterApplication)));
+    }
 }

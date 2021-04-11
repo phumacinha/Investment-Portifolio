@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import one.digitalinnovation.investment.builder.InvestmentDTOBuilder;
+import one.digitalinnovation.investment.dto.AmountDTO;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.service.InvestmentService;
@@ -27,6 +28,7 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,6 +41,9 @@ class InvestmentControllerTest {
     private static final String INVESTMENT_API_URL_PATH = "/api/v1/investments";
     private static final long VALID_INVESTMENT_ID = 1L;
     private static final long INVALID_INVESTMENT_ID = 2L;
+    private static final String INVESTMENT_API_SUBPATH_APPLICATION_URL = "/apply";
+    private static final String INVESTMENT_API_SUBPATH_WITHDRAWAL_URL = "/withdraw";
+
 
     private MockMvc mockMvc;
 
@@ -167,5 +172,41 @@ class InvestmentControllerTest {
         mockMvc.perform(delete(endPoint).contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
+    }
+
+    @Test
+    void whenPATCHIsCalledToApplyInvestmentThenOkStatusIsReturned() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(250D).build();
+
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        investmentDTO.setValue(investmentDTO.getValue() + amountDTO.getAmount());
+
+        // when
+        when(investmentService.apply(VALID_INVESTMENT_ID, amountDTO.getAmount())).thenReturn(investmentDTO);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + VALID_INVESTMENT_ID + INVESTMENT_API_SUBPATH_APPLICATION_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.value", is(investmentDTO.getValue())));
+    }
+
+    @Test
+    void whenPATCHisCalledWithInvalidInvestmentIdThenNotFoundStatusIsReturned() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(250D).build();
+
+        // when
+        when(investmentService.apply(INVALID_INVESTMENT_ID, amountDTO.getAmount())).thenThrow(InvestmentNotFoundException.class);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + INVALID_INVESTMENT_ID + INVESTMENT_API_SUBPATH_APPLICATION_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isNotFound());
     }
 }
