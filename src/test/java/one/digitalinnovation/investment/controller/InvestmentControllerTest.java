@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -24,7 +25,10 @@ import java.util.Collections;
 
 import static one.digitalinnovation.investment.utils.JsonConvertionUtils.asJsonString;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -139,6 +143,30 @@ class InvestmentControllerTest {
                 .andExpect(jsonPath("$[0].name", is(investmentDTO.getName())))
                 .andExpect(jsonPath("$[0].initialDate", is(investmentDTO.getInitialDate().toString())))
                 .andExpect(jsonPath("$[0].expirationDate", is(investmentDTO.getExpirationDate().toString())));
+
+    }
+
+    @Test
+    void whenDELETEIsCalledWithValidIdThenNoContentStatusIsReturned() throws Exception {
+        // when
+        doNothing().when(investmentService).deleteById(VALID_INVESTMENT_ID);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + VALID_INVESTMENT_ID;
+        mockMvc.perform(delete(endPoint).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+    }
+
+    @Test
+    void whenDELETEIsCalledWithInvalidIdThenNotFoundStatusIsReturned() throws Exception {
+        // when
+        doThrow(InvestmentNotFoundException.class).when(investmentService).deleteById(INVALID_INVESTMENT_ID);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + INVALID_INVESTMENT_ID;
+        mockMvc.perform(delete(endPoint).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
 
     }
 }

@@ -27,6 +27,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -135,5 +138,22 @@ class InvestmentServiceTest {
         List<InvestmentDTO> foundInvestmentDTO = investmentService.listAll();
 
         assertThat(foundInvestmentDTO, is(empty()));
+    }
+
+    @Test
+    void whenExclusionIsCalledWithValidIdThenAnInvestmentIsDeleted() throws InvestmentNotFoundException {
+        // given
+        InvestmentDTO expectedDeletedInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedDeletedInvestment = investmentMapper.toModel(expectedDeletedInvestmentDTO);
+
+        // when
+        when(investmentRepository.findById(expectedDeletedInvestmentDTO.getId())).thenReturn(Optional.of(expectedDeletedInvestment));
+        doNothing().when(investmentRepository).deleteById(expectedDeletedInvestmentDTO.getId());
+
+        // then
+        investmentService.deleteById(expectedDeletedInvestmentDTO.getId());
+
+        verify(investmentRepository, times(1)).findById(expectedDeletedInvestmentDTO.getId());
+        verify(investmentRepository, times(1)).deleteById(expectedDeletedInvestmentDTO.getId());
     }
 }

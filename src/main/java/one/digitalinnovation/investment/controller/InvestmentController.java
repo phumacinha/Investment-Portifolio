@@ -34,7 +34,8 @@ public class InvestmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public InvestmentDTO createInvestment(@RequestBody @Valid InvestmentDTO investmentDTO) throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
+    public InvestmentDTO createInvestment(@RequestBody @Valid InvestmentDTO investmentDTO)
+            throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
         return investmentService.createInvestment(investmentDTO);
     }
 
@@ -54,6 +55,7 @@ public class InvestmentController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(@PathVariable Long id) throws InvestmentNotFoundException {
         investmentService.deleteById(id);
     }
