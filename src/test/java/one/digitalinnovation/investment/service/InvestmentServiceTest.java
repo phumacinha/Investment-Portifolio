@@ -8,35 +8,34 @@ import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDat
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.mapper.InvestmentMapper;
 import one.digitalinnovation.investment.repository.InvestmentRepository;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
+import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvestmentServiceTest {
 
     private static final long INVALID_INVESTMENT_ID = 1L;
-
+    private final InvestmentMapper investmentMapper = InvestmentMapper.INSTANCE;
     @Mock
     private InvestmentRepository investmentRepository;
-
-    private final InvestmentMapper investmentMapper = InvestmentMapper.INSTANCE;
-
     @InjectMocks
     private InvestmentService investmentService;
 
@@ -109,5 +108,32 @@ class InvestmentServiceTest {
 
         // then
         assertThrows(InvestmentNotFoundException.class, () -> investmentService.findByName(expectedFoundInvestmentDTO.getName()));
+    }
+
+    @Test
+    void whenListInvestmentIsCalledThenReturnAListOfInvestments() {
+        // given
+        InvestmentDTO expectedInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedFoundInvestment = investmentMapper.toModel(expectedInvestmentDTO);
+
+        // when
+        when(investmentRepository.findAll()).thenReturn(Collections.singletonList(expectedFoundInvestment));
+
+        // then
+        List<InvestmentDTO> foundInvestmentDTO = investmentService.listAll();
+
+        assertThat(foundInvestmentDTO, is(not(empty())));
+        assertThat(foundInvestmentDTO.get(0), is(equalTo(expectedInvestmentDTO)));
+    }
+
+    @Test
+    void whenListInvestmentIsCalledThenReturnAnEmptyListOfInvestments() {
+        // when
+        when(investmentRepository.findAll()).thenReturn(emptyList());
+
+        // then
+        List<InvestmentDTO> foundInvestmentDTO = investmentService.listAll();
+
+        assertThat(foundInvestmentDTO, is(empty()));
     }
 }

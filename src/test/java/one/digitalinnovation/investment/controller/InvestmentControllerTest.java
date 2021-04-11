@@ -20,6 +20,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
+
 import static one.digitalinnovation.investment.utils.JsonConvertionUtils.asJsonString;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.when;
@@ -121,5 +123,22 @@ class InvestmentControllerTest {
         String endPoint = INVESTMENT_API_URL_PATH + "/" + investmentDTO.getName();
         mockMvc.perform(get(endPoint).contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void whenGETListWithInvestmentsIsCalledThenOkStatusIsReturned() throws Exception {
+        // given
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+
+        // when
+        when(investmentService.listAll()).thenReturn(Collections.singletonList(investmentDTO));
+
+        // then
+        mockMvc.perform(get(INVESTMENT_API_URL_PATH).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name", is(investmentDTO.getName())))
+                .andExpect(jsonPath("$[0].initialDate", is(investmentDTO.getInitialDate().toString())))
+                .andExpect(jsonPath("$[0].expirationDate", is(investmentDTO.getExpirationDate().toString())));
+
     }
 }
