@@ -3,6 +3,7 @@ package one.digitalinnovation.investment.service;
 import lombok.AllArgsConstructor;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.entity.Investment;
+import one.digitalinnovation.investment.exception.InsufficientBalanceForWithdrawalException;
 import one.digitalinnovation.investment.exception.InvestmentAlreadyRegisteredException;
 import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDateException;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
@@ -54,20 +55,23 @@ public class InvestmentService {
         investmentRepository.deleteById(id);
     }
 
-    public InvestmentDTO increment(Long id, double valueToIncrement) throws InvestmentNotFoundException {
-        Investment investmentToIncrementValue = verifyIfExists(id);
-        double valueAfterIncrement = investmentToIncrementValue.getValue() + valueToIncrement;
-        investmentToIncrementValue.setValue(valueAfterIncrement);
+    public InvestmentDTO apply(Long id, double applicationAmount) throws InvestmentNotFoundException {
+        Investment investmentToApply = verifyIfExists(id);
+        double amountAfterApplication = investmentToApply.getValue() + applicationAmount;
+        investmentToApply.setValue(amountAfterApplication);
 
-        return investmentMapper.toDTO(investmentToIncrementValue);
+        Investment investmentApplied = investmentRepository.save(investmentToApply);
+        return investmentMapper.toDTO(investmentApplied);
     }
 
-    public InvestmentDTO decrement(Long id, double valueToDecrement) throws InvestmentNotFoundException {
-        Investment investmentToDecrementValue = verifyIfExists(id);
-        double valueAfterIncrement = investmentToDecrementValue.getValue() + valueToDecrement;
-        investmentToDecrementValue.setValue(valueAfterIncrement);
+    public InvestmentDTO withdraw(Long id, double withdrawalAmount) throws InvestmentNotFoundException, InsufficientBalanceForWithdrawalException {
+        Investment investmentToWithdraw = verifyIfExists(id);
+        verifyIfThereIsEnoughBalanceToWithdrawValue(investmentToWithdraw.getValue(), withdrawalAmount);
+        double amountAfterWithdrawal = investmentToWithdraw.getValue() - withdrawalAmount;
+        investmentToWithdraw.setValue(amountAfterWithdrawal);
 
-        return investmentMapper.toDTO(investmentToDecrementValue);
+        Investment investmentWithdrawn = investmentRepository.save(investmentToWithdraw);
+        return investmentMapper.toDTO(investmentWithdrawn);
     }
 
     private void verifyIfIsAlreadyRegistered(String name) throws InvestmentAlreadyRegisteredException {
@@ -84,6 +88,13 @@ public class InvestmentService {
     private void verifyIfExpirationDateIsAfterInitialDate(LocalDate initialDate, LocalDate expirationDate) throws InvestmentInvalidExpirationDateException {
         if (expirationDate != null && expirationDate.isBefore(initialDate)) {
             throw new InvestmentInvalidExpirationDateException();
+        }
+    }
+
+    private void verifyIfThereIsEnoughBalanceToWithdrawValue(double currentBalance, double withdrawalAmount) throws InsufficientBalanceForWithdrawalException {
+        double amountAfterWithdrawal = currentBalance - withdrawalAmount;
+        if (amountAfterWithdrawal < 0) {
+            throw new InsufficientBalanceForWithdrawalException(withdrawalAmount);
         }
     }
 }
