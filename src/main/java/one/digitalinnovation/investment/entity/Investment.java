@@ -11,11 +11,10 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import java.util.Date;
+import java.time.LocalDate;
 
 import one.digitalinnovation.investment.enums.InvestmentType;
+import one.digitalinnovation.investment.enums.LiquidityFrequency;
 
 @Data
 @Entity
@@ -35,16 +34,18 @@ public class Investment {
     private InvestmentType type;
 
     @Column(nullable = false)
-    private double value;
-
-    @Column
-    private double monthYield;
+    private Double value;
 
     @Column(nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date initialDate;
+    @Enumerated(EnumType.STRING)
+    private LiquidityFrequency liquidityFrequency;
 
     @Column
-    @Temporal(TemporalType.DATE)
-    private Date endDate;
+    private Double yield;
+
+    @Column(nullable = false)
+    private LocalDate initialDate;
+
+    @Column
+    private LocalDate expirationDate;
 }

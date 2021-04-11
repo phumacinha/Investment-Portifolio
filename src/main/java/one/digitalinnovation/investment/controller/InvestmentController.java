@@ -1,8 +1,14 @@
 package one.digitalinnovation.investment.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.exception.InvestmentAlreadyRegisteredException;
+import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDateException;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.service.InvestmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +26,7 @@ import javax.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1_0/investments")
+@RequestMapping("/api/v1/investments")
 @AllArgsConstructor(onConstructor = @__(@Autowired))
 public class InvestmentController {
 
@@ -28,7 +34,7 @@ public class InvestmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public InvestmentDTO createInvestment(@RequestBody @Valid InvestmentDTO investmentDTO) throws InvestmentAlreadyRegisteredException {
+    public InvestmentDTO createInvestment(@RequestBody @Valid InvestmentDTO investmentDTO) throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
         return investmentService.createInvestment(investmentDTO);
     }
 

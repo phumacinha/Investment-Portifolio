@@ -4,17 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import one.digitalinnovation.investment.enums.InvestmentType;
+import one.digitalinnovation.investment.enums.LiquidityFrequency;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.Future;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PastOrPresent;
+import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
-import java.util.Date;
-
-import one.digitalinnovation.investment.enums.InvestmentType;
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -33,16 +31,18 @@ public class InvestmentDTO {
     private InvestmentType type;
 
     @NotNull
-    @DecimalMin(value = "0.01")
-    private double value;
-
-    @DecimalMin(value = "0.01")
-    private double monthYield;
+    @Positive
+    private Double value;
 
     @NotNull
-    @PastOrPresent
-    private Date initialDate;
+    @Enumerated(EnumType.STRING)
+    private LiquidityFrequency liquidityFrequency;
 
-    @Future
-    private Date endDate;
+    @Positive
+    private Double yield;
+
+    @NotNull
+    private LocalDate initialDate;
+
+    private LocalDate expirationDate;
 }

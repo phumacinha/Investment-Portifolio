@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.entity.Investment;
 import one.digitalinnovation.investment.exception.InvestmentAlreadyRegisteredException;
+import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDateException;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.mapper.InvestmentMapper;
 import one.digitalinnovation.investment.repository.InvestmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,7 +23,8 @@ public class InvestmentService {
     private final InvestmentRepository investmentRepository;
     private final InvestmentMapper investmentMapper = InvestmentMapper.INSTANCE;
 
-    public InvestmentDTO createInvestment(InvestmentDTO investmentDTO) throws InvestmentAlreadyRegisteredException {
+    public InvestmentDTO createInvestment(InvestmentDTO investmentDTO) throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
+        verifyIfExpirationDateIsAfterInitialDate(investmentDTO.getInitialDate(), investmentDTO.getExpirationDate());
         verifyIfIsAlreadyRegistered(investmentDTO.getName());
         Investment investment = investmentMapper.toModel(investmentDTO);
         Investment savedInvestment = investmentRepository.save(investment);
@@ -76,5 +79,11 @@ public class InvestmentService {
 
     private Investment verifyIfExists(Long id) throws InvestmentNotFoundException {
         return investmentRepository.findById(id).orElseThrow(() -> new InvestmentNotFoundException(id));
+    }
+
+    private void verifyIfExpirationDateIsAfterInitialDate(LocalDate initialDate, LocalDate expirationDate) throws InvestmentInvalidExpirationDateException {
+        if (expirationDate != null && expirationDate.isBefore(initialDate)) {
+            throw new InvestmentInvalidExpirationDateException();
+        }
     }
 }
