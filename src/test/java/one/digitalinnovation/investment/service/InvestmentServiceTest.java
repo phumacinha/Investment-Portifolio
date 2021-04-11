@@ -37,8 +37,10 @@ class InvestmentServiceTest {
 
     private static final long INVALID_INVESTMENT_ID = 1L;
     private final InvestmentMapper investmentMapper = InvestmentMapper.INSTANCE;
+
     @Mock
     private InvestmentRepository investmentRepository;
+
     @InjectMocks
     private InvestmentService investmentService;
 

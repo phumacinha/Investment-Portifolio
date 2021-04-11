@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-public class JsonConvertionUtils {
+public class JsonConversionUtils {
     public static String asJsonString(Object dto) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
