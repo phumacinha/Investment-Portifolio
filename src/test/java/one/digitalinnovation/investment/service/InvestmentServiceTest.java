@@ -3,11 +3,13 @@ package one.digitalinnovation.investment.service;
 import one.digitalinnovation.investment.builder.InvestmentDTOBuilder;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
 import one.digitalinnovation.investment.entity.Investment;
+import one.digitalinnovation.investment.exception.InsufficientBalanceForWithdrawalException;
 import one.digitalinnovation.investment.exception.InvestmentAlreadyRegisteredException;
 import one.digitalinnovation.investment.exception.InvestmentInvalidExpirationDateException;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.mapper.InvestmentMapper;
 import one.digitalinnovation.investment.repository.InvestmentRepository;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,6 +46,7 @@ class InvestmentServiceTest {
     @InjectMocks
     private InvestmentService investmentService;
 
+    // creation
     @Test
     void whenInvestmentInformedThenItShouldBeCreated() throws InvestmentAlreadyRegisteredException, InvestmentInvalidExpirationDateException {
         // given
@@ -88,6 +91,7 @@ class InvestmentServiceTest {
         assertThrows(InvestmentInvalidExpirationDateException.class, () -> investmentService.createInvestment(expectedInvestmentDTO));
     }
 
+    // get investment
     @Test
     void whenValidInvestmentNameIsGivenThenReturnAnInvestment() throws InvestmentNotFoundException {
         // given
@@ -115,6 +119,7 @@ class InvestmentServiceTest {
         assertThrows(InvestmentNotFoundException.class, () -> investmentService.findByName(expectedFoundInvestmentDTO.getName()));
     }
 
+    // list investments
     @Test
     void whenListInvestmentIsCalledThenReturnAListOfInvestments() {
         // given
@@ -142,6 +147,7 @@ class InvestmentServiceTest {
         assertThat(foundInvestmentDTO, is(empty()));
     }
 
+    // delete
     @Test
     void whenExclusionIsCalledWithValidIdThenAnInvestmentIsDeleted() throws InvestmentNotFoundException {
         // given
@@ -159,8 +165,9 @@ class InvestmentServiceTest {
         verify(investmentRepository, times(1)).deleteById(expectedDeletedInvestmentDTO.getId());
     }
 
+    // apply
     @Test
-    void whenAmountToApplyIsInformedThenItShouldBeApplied() throws InvestmentNotFoundException {
+    void whenApplyIsCalledThenAmountShouldBeApplied() throws InvestmentNotFoundException {
         // given
         InvestmentDTO expectedAppliedInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
         Investment expectedAppliedInvestment = investmentMapper.toModel(expectedAppliedInvestmentDTO);
@@ -176,5 +183,60 @@ class InvestmentServiceTest {
         InvestmentDTO appliedInvestmentDTO = investmentService.apply(expectedAppliedInvestmentDTO.getId(), applicationAmount);
 
         assertThat(appliedInvestmentDTO.getValue(), is(equalTo(expectedValueAfterApplication)));
+    }
+
+    @Test
+    void whenApplyIsCalledWithInvalidInvestmentIdThenThrowException() {
+        // when
+        when(investmentRepository.findById(INVALID_INVESTMENT_ID)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(InvestmentNotFoundException.class, () -> investmentService.apply(INVALID_INVESTMENT_ID, 1000));
+    }
+
+    // withdraw
+    @Test
+    void whenWithdrawIsCalledThenAmountShouldBeWithdrawn() throws InvestmentNotFoundException, InsufficientBalanceForWithdrawalException {
+        // given
+        InvestmentDTO expectedWithdrawnInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedWithdrawInvestment = investmentMapper.toModel(expectedWithdrawnInvestmentDTO);
+
+        // when
+        when(investmentRepository.findById(expectedWithdrawnInvestmentDTO.getId())).thenReturn(Optional.of(expectedWithdrawInvestment));
+        when(investmentRepository.save(expectedWithdrawInvestment)).thenReturn(expectedWithdrawInvestment);
+
+        double withdrawalAmount = expectedWithdrawnInvestmentDTO.getValue() * .1;
+        double expectedValueAfterWithdrawal = expectedWithdrawnInvestmentDTO.getValue() - withdrawalAmount;
+
+        // then
+        InvestmentDTO withdrawnInvestmentDTO = investmentService.withdraw(expectedWithdrawnInvestmentDTO.getId(), withdrawalAmount);
+
+        assertThat(withdrawnInvestmentDTO.getValue(), is(equalTo(expectedValueAfterWithdrawal)));
+
+    }
+
+    @Test
+    void whenWithdrawIsCalledWithInvalidInvestmentIdThenThrowException() {
+        // when
+        when(investmentRepository.findById(INVALID_INVESTMENT_ID)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(InvestmentNotFoundException.class, () -> investmentService.withdraw(INVALID_INVESTMENT_ID, 1000));
+    }
+
+    @Test
+    void whenWithdrawAmountIsGreaterThanBalanceThenThrowException() {
+        // given
+        InvestmentDTO expectedWithdrawnInvestmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        Investment expectedWithdrawInvestment = investmentMapper.toModel(expectedWithdrawnInvestmentDTO);
+
+        // when
+        when(investmentRepository.findById(expectedWithdrawnInvestmentDTO.getId())).thenReturn(Optional.of(expectedWithdrawInvestment));
+
+        double withdrawalAmount = expectedWithdrawnInvestmentDTO.getValue() + 1;
+
+        // then
+        assertThrows(InsufficientBalanceForWithdrawalException.class, () -> investmentService.withdraw(expectedWithdrawnInvestmentDTO.getId(), withdrawalAmount));
+
     }
 }

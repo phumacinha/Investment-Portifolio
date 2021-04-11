@@ -7,6 +7,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import one.digitalinnovation.investment.builder.InvestmentDTOBuilder;
 import one.digitalinnovation.investment.dto.AmountDTO;
 import one.digitalinnovation.investment.dto.InvestmentDTO;
+import one.digitalinnovation.investment.entity.Investment;
+import one.digitalinnovation.investment.exception.InsufficientBalanceForWithdrawalException;
 import one.digitalinnovation.investment.exception.InvestmentNotFoundException;
 import one.digitalinnovation.investment.service.InvestmentService;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +72,7 @@ class InvestmentControllerTest {
                 .build();
     }
 
+    // create
     @Test
     void whenPOSTIsCalledThenAnInvestmentIsCreated() throws Exception {
         // given
@@ -101,6 +104,7 @@ class InvestmentControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // get
     @Test
     void whenGETIsCalledWithValidNameThenOkStatusIsReturned() throws Exception {
         // given
@@ -133,6 +137,7 @@ class InvestmentControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    // list
     @Test
     void whenGETListWithInvestmentsIsCalledThenOkStatusIsReturned() throws Exception {
         // given
@@ -150,6 +155,7 @@ class InvestmentControllerTest {
 
     }
 
+    // delete
     @Test
     void whenDELETEIsCalledWithValidIdThenNoContentStatusIsReturned() throws Exception {
         // when
@@ -174,13 +180,13 @@ class InvestmentControllerTest {
 
     }
 
+    // apply
     @Test
     void whenPATCHIsCalledToApplyInvestmentThenOkStatusIsReturned() throws Exception {
         // given
         AmountDTO amountDTO = AmountDTO.builder().amount(250D).build();
 
         InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
-        investmentDTO.setValue(investmentDTO.getValue() + amountDTO.getAmount());
 
         // when
         when(investmentService.apply(VALID_INVESTMENT_ID, amountDTO.getAmount())).thenReturn(investmentDTO);
@@ -190,8 +196,7 @@ class InvestmentControllerTest {
         mockMvc.perform(patch(endPoint)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(amountDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.value", is(investmentDTO.getValue())));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -208,5 +213,65 @@ class InvestmentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(amountDTO)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void whenPATCHisCalledWithAmountLessThanZeroThenReturnError() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(-1D).build();
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + VALID_INVESTMENT_ID + INVESTMENT_API_SUBPATH_APPLICATION_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // withdraw
+    @Test
+    void whenPATCHIsCalledToWithdrawThenOkStatusIsReturned() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(250D).build();
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+
+        // when
+        when(investmentService.withdraw(investmentDTO.getId(), amountDTO.getAmount())).thenReturn(investmentDTO);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + investmentDTO.getId() + INVESTMENT_API_SUBPATH_WITHDRAWAL_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void whenPATCHIsCalledWithInvalidInvestmentIdThenNotFoundStatusIsReturned() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(250D).build();
+
+        // when
+        when(investmentService.withdraw(INVALID_INVESTMENT_ID, amountDTO.getAmount())).thenThrow(InvestmentNotFoundException.class);
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + INVALID_INVESTMENT_ID + INVESTMENT_API_SUBPATH_WITHDRAWAL_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void whenPATCHIsCalledWithAmountLessThanZeroThenReturnError() throws Exception {
+        // given
+        AmountDTO amountDTO = AmountDTO.builder().amount(-1D).build();
+
+        // then
+        String endPoint = INVESTMENT_API_URL_PATH + "/" + VALID_INVESTMENT_ID + INVESTMENT_API_SUBPATH_WITHDRAWAL_URL;
+        mockMvc.perform(patch(endPoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(amountDTO)))
+                .andExpect(status().isBadRequest());
     }
 }
