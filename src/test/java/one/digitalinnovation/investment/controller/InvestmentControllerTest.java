@@ -61,7 +61,7 @@ class InvestmentControllerTest {
     @Test
     void whenPOSTIsCalledThenAnInvestmentIsCreated() throws Exception {
         // given
-        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().id(null).build().toInvestmentDTO();
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
 
         // when
         when(investmentService.createInvestment(investmentDTO)).thenReturn(investmentDTO);
@@ -74,5 +74,18 @@ class InvestmentControllerTest {
                 .andExpect(jsonPath("$.name", is(investmentDTO.getName())))
                 .andExpect(jsonPath("$.initialDate", is(investmentDTO.getInitialDate().toString())))
                 .andExpect(jsonPath("$.expirationDate", is(investmentDTO.getExpirationDate().toString())));
+    }
+
+    @Test
+    void whenPOSTIsCalledWithoutRequiredFieldThanAnErrorIsReturned() throws Exception {
+        // given
+        InvestmentDTO investmentDTO = InvestmentDTOBuilder.builder().build().toInvestmentDTO();
+        investmentDTO.setName(null);
+
+        // then
+        mockMvc.perform(post(INVESTMENT_API_URL_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(investmentDTO)))
+                .andExpect(status().isBadRequest());
     }
 }
